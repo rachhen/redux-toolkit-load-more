@@ -59,6 +59,7 @@ function PostHome() {
       <Table variant="unstyled">
         <Thead>
           <Tr>
+            <Th>ID</Th>
             <Th>Title</Th>
             <Th>Status</Th>
             <Th>Created At</Th>
@@ -68,6 +69,7 @@ function PostHome() {
         <Tbody>
           {posts?.data.map(({ id, title, created_at, status }) => (
             <Tr key={id}>
+              <Td>{id}</Td>
               <Td>{title}</Td>
               <Td>
                 <Badge
