@@ -34,9 +34,8 @@ function PostCreate() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(post);
     await createPost(post).unwrap();
-    navigate("/");
+    navigate(-1);
   };
 
   const onChange = (e: ChangeType) => {
@@ -45,7 +44,7 @@ function PostCreate() {
 
   return (
     <Box w="50%" m="auto" mt="50">
-      <Button size="xs" onClick={() => navigate("/")}>
+      <Button size="xs" onClick={() => navigate(-1)}>
         Back
       </Button>
       <Heading mb="5">Create Post</Heading>

@@ -1,7 +1,7 @@
-import _ from "lodash";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { cacher } from "../../utils/rtkQueryCacheUtils";
 import { RootState } from "../store";
+import { ListRessonse, getCache } from "../../utils/cache";
 
 export const postStatuses = ["draft", "published", "pending_review"] as const;
 
@@ -13,14 +13,6 @@ export interface Post {
   status: typeof postStatuses[number];
   created_at: string;
   updated_at: string;
-}
-
-interface ListRessonse<T> {
-  page: number;
-  per_page: number;
-  total: number;
-  total_pages: number;
-  data: T[];
 }
 
 export interface CreatePostBody {
@@ -41,48 +33,44 @@ export type PostError = {
   status?: string;
 };
 
-function unionBy<T extends unknown[]>(arr1: T, arr2: T, prop: keyof T[number]) {
-  return [...arr2, ...arr1].filter((item, pos, arr) => {
-    return arr.findIndex((item2) => item[prop] == item2[prop]) == pos;
-  });
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  password: string;
+  email: string;
+  avatar: string;
+  status: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateUserBody {
+  firstName: string;
+  lastName: string;
+  username: string;
+  password: string;
+  email: string;
+  avatar: string;
+  status: string;
 }
 
 export const postApi = createApi({
   reducerPath: "posts",
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
-  tagTypes: [...cacher.defaultTags, "Post"],
+  tagTypes: [...cacher.defaultTags, "Post", "User"],
   endpoints: (builder) => ({
-    login: builder.mutation<unknown, void>({
-      query: () => "/login",
-      invalidatesTags: cacher.invalidatesUnauthorized(),
-    }),
-    refetchErroredQueries: builder.mutation<unknown, void>({
-      queryFn: () => {
-        return { data: {} };
-      },
-      invalidatesTags: cacher.invalidatesUnknownErrors(),
-    }),
     posts: builder.query<ListRessonse<Post>, number | void>({
       query: (page = 1) => `posts?page=${page}`,
       providesTags: cacher.providesNestedList("Post"),
       async onQueryStarted(_, { getState, queryFulfilled, updateCachedData }) {
         try {
           const state = getState() as RootState;
-          const postsQueries = state.posts.queries;
-          let cacheData: Post[] = [];
-
-          for (let post of Object.values(postsQueries)) {
-            if (post?.status === "fulfilled") {
-              const postData = post.data as ListRessonse<Post>;
-              cacheData = unionBy<Post[]>(cacheData, postData.data, "id");
-            }
-          }
-
+          const cacheData = getCache<Post>(state, "posts", "posts", "id");
           const { data } = await queryFulfilled;
           cacheData.push(...data.data);
-          // cacheData.sort((a, b) => +a.id - +b.id);
-          const newData = { ...data };
-          newData.data = cacheData;
+          const newData = { ...data, data: cacheData };
           updateCachedData((draft) => {
             Object.assign(draft, newData);
           });
@@ -108,6 +96,44 @@ export const postApi = createApi({
       query: (id) => ({ url: `posts/${id}`, method: "DELETE" }),
       invalidatesTags: cacher.cacheByIdArg("Post"),
     }),
+    users: builder.query<ListRessonse<User>, number | void>({
+      query: (page = 1) => `users?page=${page}`,
+      providesTags: cacher.providesNestedList("User"),
+      async onQueryStarted(_, { getState, queryFulfilled, updateCachedData }) {
+        try {
+          const state = getState() as RootState;
+          const cacheData = getCache<User>(state, "posts", "users", "id");
+          const { data } = await queryFulfilled;
+          cacheData.push(...data.data);
+          const newData = { ...data, data: cacheData };
+          updateCachedData((draft) => {
+            Object.assign(draft, newData);
+          });
+        } catch (err) {
+          console.log(err);
+          console.log("Error fetching posts!");
+        }
+      },
+    }),
+    user: builder.query<User, string>({
+      query: (id) => `users/${id}`,
+      providesTags: cacher.cacheByIdArg("User"),
+    }),
+    addUser: builder.mutation<User, CreateUserBody>({
+      query: (body) => ({ url: "users", method: "POST", body }),
+      invalidatesTags: cacher.invalidatesList("User"),
+    }),
+    updateUser: builder.mutation<
+      User,
+      Partial<CreateUserBody> & { id: string }
+    >({
+      query: ({ id, ...body }) => ({ url: `users/${id}`, method: "PUT", body }),
+      invalidatesTags: cacher.cacheByIdArgProperty("User"),
+    }),
+    deleteUser: builder.mutation<User, string>({
+      query: (id) => ({ url: `users/${id}`, method: "DELETE" }),
+      invalidatesTags: cacher.cacheByIdArg("User"),
+    }),
   }),
 });
 
@@ -117,4 +143,9 @@ export const {
   useAddPostMutation,
   useUpdatePostMutation,
   useDeletePostMutation,
+  useUsersQuery,
+  useUserQuery,
+  useAddUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
 } = postApi;

@@ -37,7 +37,7 @@ function PostShow() {
       return false;
     }
     await deletePost(params.id!).unwrap();
-    navigate("/");
+    navigate("/posts");
   };
 
   if (isLoading) {

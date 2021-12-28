@@ -46,15 +46,10 @@ function PostHome() {
   }
 
   return (
-    <Box w="80%" m="auto" pt="50">
-      <HStack>
-        <Button as={Link} to={"/"}>
-          Home
-        </Button>
-        <Button as={Link} to={"/posts/new"}>
-          Add Post
-        </Button>
-      </HStack>
+    <Box maxW="container.lg" m="auto" pt="10">
+      <Button as={Link} to={"/posts/new"}>
+        Add Post
+      </Button>
 
       <Table variant="unstyled">
         <Thead>
@@ -67,9 +62,9 @@ function PostHome() {
           </Tr>
         </Thead>
         <Tbody>
-          {posts?.data.map(({ id, title, created_at, status }) => (
+          {posts?.data.map(({ id, title, created_at, status }, index) => (
             <Tr key={id}>
-              <Td>{id}</Td>
+              <Td>{index + 1}</Td>
               <Td>{title}</Td>
               <Td>
                 <Badge
